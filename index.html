@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Glitch in Blackwood Data - Rogue Dashboard AI</title>
-    <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Custom styles for a tech/data center look */
@@ -112,12 +111,10 @@
 
     <div class="flex flex-col lg:flex-row gap-8 max-w-7xl mx-auto">
         
-        <!-- Left Column: Interactive Story Interface -->
         <div class="lg:w-3/5">
             
             <div id="story-container" class="data-panel p-6 md:p-10 rounded-xl relative"> 
                 
-                <!-- Main Scene Image Container -->
                 <div id="image-wrapper" class="w-full aspect-video rounded-lg mb-6 border border-purple-500 shadow-xl flex items-center justify-center bg-[#110518]">
                     <img id="scene-image" class="w-full h-full object-cover rounded-lg" alt="Scene Image" style="display: none;">
                     <div id="image-loading" class="hidden">
@@ -129,7 +126,6 @@
                 <h1 id="slide-title" class="text-3xl md:text-4xl font-extrabold text-orange-400 mb-4"></h1>
                 <p id="slide-scene" class="text-gray-200 text-lg mb-8 leading-relaxed"></p>
 
-                <!-- Monster Name Input Form (Visible on S0) -->
                 <div id="monster-name-input-area" class="space-y-4 mb-6 hidden">
                     <label for="monster-name-input" class="block text-xl font-semibold text-orange-300">Name Your Monster (Identifier for Leaderboard):</label>
                     <input type="text" id="monster-name-input" placeholder="e.g., Glitch, Whisper, Code Eater" class="w-full p-3 rounded-lg bg-[#2a1340] border border-purple-500 text-white focus:ring-orange-500 focus:border-orange-500">
@@ -140,8 +136,7 @@
                 </div>
                 
                 <div id="decision-points" class="space-y-4">
-                    <!-- Decisions are rendered here -->
-                </div>
+                    </div>
 
                 <div id="game-over-message" class="hidden mt-6 p-4 text-center rounded-lg">
                     <p class="text-xl font-semibold"></p>
@@ -150,21 +145,17 @@
             </div>
         </div>
 
-        <!-- Right Column: Decision Tree Visualization and Stats -->
         <div class="lg:w-2/5">
             <div class="data-panel p-6 rounded-xl h-full flex flex-col">
                 
-                <!-- STATS PANEL (Current Player/Monster) -->
                 <h2 class="text-xl font-bold text-white mb-4 border-b border-gray-600 pb-2">Your Monster: <span id="monster-name-display" class="text-orange-400">Not Set</span></h2>
                 <div class="space-y-2 mb-6 text-sm font-mono text-orange-300">
-                    <!-- ADDED HANDLER ID FOR TROUBLESHOOTING -->
                     <p class="truncate">Handler ID: <span id="handler-id" class="text-white font-bold">Waiting for Auth...</span></p> 
                     <p>Total Tries: <span id="try-count" class="text-white font-bold">0</span></p>
                     <p>Current Time: <span id="current-time" class="text-white font-bold">0:00</span></p>
                     <p>Best Success Time: <span id="best-time" class="text-white font-bold">N/A</span></p>
                 </div>
 
-                <!-- LEADERBOARD / COLLABORATIVE TRACKER -->
                 <h2 class="text-xl font-bold text-white mb-4 border-b border-gray-600 pb-2 mt-auto">Monster Handler Tracker</h2>
                 <div id="monster-progress-list" class="flex-grow overflow-y-auto text-sm text-gray-300">
                     <table class="monster-table w-full text-left table-auto">
@@ -181,24 +172,33 @@
                     </table>
                 </div>
 
-                <!-- Visualization -->
                 <h2 class="text-xl font-bold text-white mb-4 border-b border-gray-600 pb-2 mt-6">Decision Flow Analysis</h2>
                 <div id="tree-visualization" class="relative">
-                    <!-- The full story tree and the current path are visualized here -->
-                </div>
+                    </div>
             </div>
         </div>
     </div>
 
     <script type="module">
+        // --- FIXED IMPORTS AND CONFIGURATION FOR PUBLIC HOSTING ---
+        // We are using the 11.6.1 SDK imports as they were already in the original game.
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, collection, query, updateDoc, getDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Global Firebase Configuration and Variables (MANDATORY USE)
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        // Global Firebase Configuration and Variables (HARDCODED for blackstonedatacenter)
+        const firebaseConfig = {
+          apiKey: "AIzaSyC2rDBzWBDnfLvbbHgTZ1k6KWVZrDFHKYE",
+          authDomain: "blackstonedatacenter.firebaseapp.com",
+          projectId: "blackstonedatacenter",
+          storageBucket: "blackstonedatacenter.firebasestorage.app",
+          messagingSenderId: "611725862711",
+          appId: "1:611725862711:web:504c3c977b92c076b59cb2"
+        };
+        
+        // Use project ID as the app ID, and set token to null for public deployment
+        const appId = firebaseConfig.projectId; 
+        const initialAuthToken = null; // CRITICAL: Forces Anonymous Sign-in on public web
 
         // Initialize Firebase services
         const app = initializeApp(firebaseConfig);
@@ -229,7 +229,8 @@
         // --- IMAGE GENERATION AND CACHING LOGIC ---
 
         const IMAGE_MODEL = "imagen-3.0-generate-002";
-        const API_KEY = ""; 
+        // 🚨 IMPORTANT: REPLACE THIS PLACEHOLDER WITH YOUR ACTUAL GEMINI API KEY
+        const API_KEY = "YOUR_GEMINI_API_KEY_HERE"; 
 
         // Helper function for exponential backoff during API calls
         async function exponentialBackoffFetch(url, options, maxRetries = 5, delay = 1000) {
@@ -320,11 +321,8 @@
 
         async function authenticateAndInitialize() {
             try {
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
-                }
+                // 🚨 CRITICAL FIX: Force Anonymous Sign-in for public access, ignoring the old token check
+                await signInAnonymously(auth);
                 
                 userId = auth.currentUser.uid;
                 authReady = true;
@@ -414,8 +412,8 @@
                 monsters.forEach(monster => {
                     const isCurrentMonster = monster.monsterName === monsterName;
                     const bestTimeStr = monster.bestTimeSeconds && monster.bestTimeSeconds > 0 
-                                        ? formatTime(monster.bestTimeSeconds) 
-                                        : 'N/A';
+                                             ? formatTime(monster.bestTimeSeconds) 
+                                             : 'N/A';
                     
                     const row = document.createElement('tr');
                     row.className = `transition-colors duration-300 ${isCurrentMonster ? 'current-monster-row' : ''}`;
@@ -764,11 +762,11 @@ Your Monster’s mission: infiltrate the server room, retrieve the **Core Logic 
             
             let statusLine = '';
             if (slideId !== 'S0' && slideId !== 'S0_READY') {
-                 checkGameItems(slideId);
-                 statusLine = `<p class="text-sm font-mono mt-4 text-orange-500">Monster Status: Key: ${hasKey ? 'ACQUIRED' : 'PENDING'} | Code: ${hasCode ? 'ACQUIRED' : 'PENDING'}</p>`;
-                 sceneEl.innerHTML = slide.scene + statusLine; 
+                checkGameItems(slideId);
+                statusLine = `<p class="text-sm font-mono mt-4 text-orange-500">Monster Status: Key: ${hasKey ? 'ACQUIRED' : 'PENDING'} | Code: ${hasCode ? 'ACQUIRED' : 'PENDING'}</p>`;
+                sceneEl.innerHTML = slide.scene + statusLine; 
             } else if (slideId !== 'S0_READY') {
-                 sceneEl.textContent = slide.scene;
+                sceneEl.textContent = slide.scene;
             }
 
             decisionsEl.innerHTML = '';
@@ -913,7 +911,7 @@ Your Monster’s mission: infiltrate the server room, retrieve the **Core Logic 
             }
 
             if (currentSlideId === 'S7' || currentSlideId === 'S11_FAILURE' || currentSlideId === 'S9_FAIL') {
-                 stopTimer();
+                stopTimer();
             }
 
             renderSlide(currentSlideId);
