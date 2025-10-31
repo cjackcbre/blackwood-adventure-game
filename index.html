@@ -179,7 +179,6 @@
 
     <script type="module">
         // --- FIXED IMPORTS AND CONFIGURATION FOR PUBLIC HOSTING ---
-        // Using the v11.6.1 SDK imports as they were in the original game.
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, collection, query, updateDoc, getDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -215,7 +214,7 @@
         // Monster State 
         let monsterName = localStorage.getItem('currentMonsterName') || '';
         const MONSTERS_COLLECTION_PATH = `artifacts/${appId}/public/data/monsters`;
-        // NOTE: IMAGE_CACHE_COLLECTION_PATH and related logic removed
+        // Removed IMAGE_CACHE_COLLECTION_PATH and related Gemini variables.
         
         // STATS VARIABLES
         let startTime = 0;
@@ -223,9 +222,6 @@
         let gameTries = 0;
         let bestTime = null; // Stored in seconds
 
-        // --- IMAGE GENERATION AND CACHING LOGIC REMOVED ---
-        // All API key, fetch helpers, and getOrCreateImage function removed for speed.
-        
         // --- FIREBASE INITIALIZATION AND AUTH ---
 
         async function authenticateAndInitialize() {
