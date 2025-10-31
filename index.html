@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Glitch in Blackwood Data - Rogue Dashboard AI</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for a tech/data center look */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111111; /* Dark Black */
+        }
+        .data-panel {
+            border: 1px solid #6A0DAD; /* Deep Purple border */
+            box-shadow: 0 0 15px rgba(255, 140, 0, 0.7); /* Glowing Orange effect */
+            background-color: #1a082a; /* Darker purple-black */
+        }
+        .text-neon {
+            color: #FF8C00; /* Dark Orange */
+        }
+        .btn-decision {
+            transition: all 0.2s;
+            box-shadow: 0 4px #4B0082; /* Indigo shadow */
+            cursor: pointer;
+            background-color: #330066; /* Deep Violet Button */
+            color: #FF8C00; /* Orange Text */
+        }
+        .btn-decision:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px #FF8C00;
+            background-color: #5500aa;
+        }
+        .btn-decision:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px #4B0082;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #FF8C00;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* --- Visualization Tree Styling (Simplified to dots) --- */
+        .node {
+            padding: 0;
+            width: 1rem; /* Make it a small dot */
+            height: 1rem;
+            border-radius: 50%; /* Make it a circle */
+            margin: 0;
+            display: inline-block;
+            box-shadow: 0 0 5px rgba(255, 140, 0, 0.5); /* Keep a small glow */
+            background-color: #333333; /* Dark gray node background */
+            position: relative;
+            z-index: 10;
+        }
+        .node-visited {
+            background-color: #6A0DAD; /* Deep Purple for active path */
+            border: 2px solid #FF8C00; /* Orange ring to show selection */
+            transform: scale(1.1); /* Slight emphasis on visited node */
+        }
+        .node-success {
+            background-color: #3CB371; /* Success Green */
+        }
+        .node-failure {
+            background-color: #CC0000; /* Failure Red */
+        }
+        
+        /* Connecting Line Adjustments */
+        .connector {
+            height: 1.5rem; 
+            width: 2px;
+            background-color: #4B0082; 
+            margin: 0.25rem auto; 
+        }
+        .connector.path-taken {
+            background-color: #FF8C00; /* Orange for path taken */
+        }
+        .tree-level {
+            display: flex;
+            justify-content: center;
+            gap: 2rem; /* Increase gap for dot separation */
+            margin-bottom: 0.5rem; /* Reduced margin */
+        }
+        .monster-table th, .monster-table td {
+            padding: 0.5rem;
+            border-bottom: 1px solid #333;
+        }
+        .current-monster-row {
+            background-color: #4B0082; /* Highlight current monster */
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 min-h-screen">
+
+    <div class="text-3xl font-extrabold text-orange-400 text-center mb-6 border-b border-orange-700 pb-2">
+        The Glitch in Blackwood Data: ROGUE DASHBOARD AI
+    </div>
+
+    <div class="flex flex-col lg:flex-row gap-8 max-w-7xl mx-auto">
+        
+        <!-- Left Column: Interactive Story Interface -->
+        <div class="lg:w-3/5">
+            
+            <div id="story-container" class="data-panel p-6 md:p-10 rounded-xl relative"> 
+                
+                <!-- Main Scene Image Container -->
+                <div id="image-wrapper" class="w-full aspect-video rounded-lg mb-6 border border-purple-500 shadow-xl flex items-center justify-center bg-[#110518]">
+                    <img id="scene-image" class="w-full h-full object-cover rounded-lg" alt="Scene Image" style="display: none;">
+                    <div id="image-loading" class="hidden">
+                        <div class="spinner"></div>
+                        <p class="text-sm text-gray-400 mt-2">Generating scene visualization...</p>
+                    </div>
+                </div>
+
+                <h1 id="slide-title" class="text-3xl md:text-4xl font-extrabold text-orange-400 mb-4"></h1>
+                <p id="slide-scene" class="text-gray-200 text-lg mb-8 leading-relaxed"></p>
+
+                <!-- Monster Name Input Form (Visible on S0) -->
+                <div id="monster-name-input-area" class="space-y-4 mb-6 hidden">
+                    <label for="monster-name-input" class="block text-xl font-semibold text-orange-300">Name Your Monster (Identifier for Leaderboard):</label>
+                    <input type="text" id="monster-name-input" placeholder="e.g., Glitch, Whisper, Code Eater" class="w-full p-3 rounded-lg bg-[#2a1340] border border-purple-500 text-white focus:ring-orange-500 focus:border-orange-500">
+                    <button id="set-monster-button" class="btn-decision w-full text-center p-4 rounded-lg">
+                        Deploy Monster & Begin
+                    </button>
+                    <p id="monster-name-error" class="text-red-400 hidden"></p>
+                </div>
+                
+                <div id="decision-points" class="space-y-4">
+                    <!-- Decisions are rendered here -->
+                </div>
+
+                <div id="game-over-message" class="hidden mt-6 p-4 text-center rounded-lg">
+                    <p class="text-xl font-semibold"></p>
+                    <button id="reset-button" class="mt-4 px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">Start New Investigation</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Decision Tree Visualization and Stats -->
+        <div class="lg:w-2/5">
+            <div class="data-panel p-6 rounded-xl h-full flex flex-col">
+                
+                <!-- STATS PANEL (Current Player/Monster) -->
+                <h2 class="text-xl font-bold text-white mb-4 border-b border-gray-600 pb-2">Your Monster: <span id="monster-name-display" class="text-orange-400">Not Set</span></h2>
+                <div class="space-y-2 mb-6 text-sm font-mono text-orange-300">
+                    <!-- ADDED HANDLER ID FOR TROUBLESHOOTING -->
+                    <p class="truncate">Handler ID: <span id="handler-id" class="text-white font-bold">Waiting for Auth...</span></p> 
+                    <p>Total Tries: <span id="try-count" class="text-white font-bold">0</span></p>
+                    <p>Current Time: <span id="current-time" class="text-white font-bold">0:00</span></p>
+                    <p>Best Success Time: <span id="best-time" class="text-white font-bold">N/A</span></p>
+                </div>
+
+                <!-- LEADERBOARD / COLLABORATIVE TRACKER -->
+                <h2 class="text-xl font-bold text-white mb-4 border-b border-gray-600 pb-2 mt-auto">Monster Handler Tracker</h2>
+                <div id="monster-progress-list" class="flex-grow overflow-y-auto text-sm text-gray-300">
+                    <table class="monster-table w-full text-left table-auto">
+                        <thead>
+                            <tr class="text-orange-400 uppercase text-xs">
+                                <th class="w-1/2">Monster Name</th>
+                                <th class="text-center">Tries</th>
+                                <th class="text-center">Best Time</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tracker-body">
+                            <tr><td colspan="3" class="text-center py-4">Loading monster data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Visualization -->
+                <h2 class="text-xl font-bold text-white mb-4 border-b border-gray-600 pb-2 mt-6">Decision Flow Analysis</h2>
+                <div id="tree-visualization" class="relative">
+                    <!-- The full story tree and the current path are visualized here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, query, updateDoc, getDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global Firebase Configuration and Variables (MANDATORY USE)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // Initialize Firebase services
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        
+        // Optional: Set Firestore logging level for debugging
+        setLogLevel('Debug');
+
+        // Global state
+        let currentSlideId = 'S0';
+        let pathHistory = [];
+        let userId = null;
+        let authReady = false; 
+
+        // Monster State 
+        let monsterName = localStorage.getItem('currentMonsterName') || '';
+        const MONSTERS_COLLECTION_PATH = `artifacts/${appId}/public/data/monsters`;
+        // NEW: Public cache for generated images
+        const IMAGE_CACHE_COLLECTION_PATH = `artifacts/${appId}/public/data/image_cache`;
+
+        // STATS VARIABLES
+        let startTime = 0;
+        let timerInterval = null;
+        let gameTries = 0;
+        let bestTime = null; // Stored in seconds
+
+        // --- IMAGE GENERATION AND CACHING LOGIC ---
+
+        const IMAGE_MODEL = "imagen-3.0-generate-002";
+        const API_KEY = ""; 
+
+        // Helper function for exponential backoff during API calls
+        async function exponentialBackoffFetch(url, options, maxRetries = 5, delay = 1000) {
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.ok) {
+                        return response;
+                    } else if (response.status === 429) { // Rate limit or quota error
+                        console.warn(`Fetch attempt ${i + 1} hit rate limit (429). Retrying...`);
+                    }
+                } catch (error) {
+                    console.warn(`Fetch attempt ${i + 1} failed. Retrying...`);
+                }
+                await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
+            }
+            throw new Error('All fetch attempts failed.');
+        }
+        
+        // NEW: Get or Create Image using Firestore as a cache layer
+        async function getOrCreateImage(prompt, slideId) {
+            const cacheDocRef = doc(db, IMAGE_CACHE_COLLECTION_PATH, slideId);
+
+            // 1. Check browser's local storage (fastest check, avoids API/DB calls for returning users)
+            const localDataUrl = localStorage.getItem(`image_${slideId}`);
+            if (localDataUrl) {
+                console.log(`Image for ${slideId} found in local storage.`);
+                return localDataUrl;
+            }
+
+            // 2. Image not found locally, proceed to generate
+            console.log(`Image for ${slideId} not in local cache. Generating...`);
+
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${IMAGE_MODEL}:predict?key=${API_KEY}`;
+            
+            // Refine the prompt for high-quality, thematic images
+            const fullPrompt = `Cinematic, photorealistic image of a futuristic, dark data center environment, glowing neon orange and deep purple lights, high-tech glitch atmosphere, wide shot. Subject: ${prompt}`;
+            
+            const payload = { 
+                instances: { prompt: fullPrompt }, 
+                parameters: { "sampleCount": 1, "aspectRatio": "16:9" } 
+            };
+
+            const options = {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            };
+
+            try {
+                const response = await exponentialBackoffFetch(apiUrl, options);
+                const result = await response.json();
+
+                if (result.predictions && result.predictions.length > 0 && result.predictions[0].bytesBase64Encoded) {
+                    const imageDataUrl = `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`;
+                    
+                    // 3. Store the result in local storage (for returning user's sessions)
+                    localStorage.setItem(`image_${slideId}`, imageDataUrl);
+                    
+                    // 4. Store ONLY METADATA in Firestore (to avoid the 1MB document limit error)
+                    // This acts as a global flag that this prompt has been successfully generated.
+                    try {
+                        await setDoc(cacheDocRef, {
+                            prompt: prompt,
+                            // CRITICAL FIX: Do NOT store the large Base64 string here
+                            generated: true, 
+                            timestamp: new Date()
+                        }, { merge: true });
+                        console.log(`Image metadata for ${slideId} successfully cached to Firestore.`);
+                    } catch (error) {
+                        // Log non-critical error, but the image is generated and saved locally
+                        console.error("Error writing image metadata to Firestore:", error);
+                    }
+
+                    return imageDataUrl;
+
+                } else {
+                    console.error("Image generation failed:", result);
+                    return null;
+                }
+            } catch (error) {
+                console.error("API call error during image generation:", error);
+                return null;
+            }
+        }
+        
+        // --- FIREBASE INITIALIZATION AND AUTH ---
+
+        async function authenticateAndInitialize() {
+            try {
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                
+                userId = auth.currentUser.uid;
+                authReady = true;
+                
+                // Display the User ID as soon as authentication is successful
+                document.getElementById('handler-id').textContent = userId; 
+
+                initializeGame();
+                startTeamTrackerListener(); 
+
+            } catch (error) {
+                console.error("Authentication failed, cannot start game:", error);
+                document.getElementById('handler-id').textContent = "Authentication Failed";
+            }
+        }
+        
+        authenticateAndInitialize();
+
+        onAuthStateChanged(auth, (user) => {
+            if (user && user.uid !== userId) {
+                userId = user.uid;
+            }
+        });
+
+        // --- FIREBASE DATA HELPERS (UNCHANGED) ---
+
+        function getMonsterDocRef(name) {
+            const sanitizedName = name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            return doc(db, MONSTERS_COLLECTION_PATH, sanitizedName);
+        }
+
+        async function updateMonsterStats(data, updateCurrentTime = false) {
+            if (!monsterName || !authReady) {
+                console.error("Update failed: Monster name not set or authentication not ready.");
+                return;
+            }
+
+            const docRef = getMonsterDocRef(monsterName);
+            const monsterData = {
+                monsterName: monsterName,
+                lastUpdated: new Date(),
+                ...data
+            };
+            
+            if (!updateCurrentTime) {
+                monsterData.currentActiveTimeSeconds = 0;
+            }
+
+            try {
+                await setDoc(docRef, monsterData, { merge: true });
+            } catch (error) {
+                console.error("Error updating monster stats:", error);
+            }
+        }
+        
+        // --- REAL-TIME MONSTER TRACKER (UNCHANGED) ---
+
+        function startTeamTrackerListener() {
+            if (!authReady) {
+                console.warn("Tracker listener deferred: Authentication not ready.");
+                return;
+            }
+
+            const q = query(collection(db, MONSTERS_COLLECTION_PATH));
+            const trackerBody = document.getElementById('tracker-body');
+
+            onSnapshot(q, (snapshot) => {
+                const monsters = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    monsters.push(data);
+                });
+
+                monsters.sort((a, b) => {
+                    const timeA = a.bestTimeSeconds > 0 ? a.bestTimeSeconds : Infinity;
+                    const timeB = b.bestTimeSeconds > 0 ? b.bestTimeSeconds : Infinity;
+                    return timeA - timeB;
+                });
+                
+                trackerBody.innerHTML = '';
+                
+                if (monsters.length === 0) {
+                    trackerBody.innerHTML = '<tr><td colspan="3" class="text-center py-4">No monsters have been deployed yet!</td></tr>';
+                    return;
+                }
+
+                monsters.forEach(monster => {
+                    const isCurrentMonster = monster.monsterName === monsterName;
+                    const bestTimeStr = monster.bestTimeSeconds && monster.bestTimeSeconds > 0 
+                                        ? formatTime(monster.bestTimeSeconds) 
+                                        : 'N/A';
+                    
+                    const row = document.createElement('tr');
+                    row.className = `transition-colors duration-300 ${isCurrentMonster ? 'current-monster-row' : ''}`;
+                    row.innerHTML = `
+                        <td>${monster.monsterName}</td>
+                        <td class="text-center">${monster.tries || 0}</td>
+                        <td class="text-center">${bestTimeStr}</td>
+                    `;
+                    trackerBody.appendChild(row);
+                });
+            }, (error) => {
+                console.error("Error fetching monster list:", error);
+                trackerBody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-red-500">Failed to load monster data. (Auth/Network Issue)</td></tr>';
+            });
+        }
+
+        // --- STATS HELPER FUNCTIONS (UNCHANGED) ---
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+        }
+
+        function updateTimer() {
+            const currentTimeEl = document.getElementById('current-time');
+            if (!startTime) return;
+
+            const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+            currentTimeEl.textContent = formatTime(elapsedSeconds);
+            
+            updateMonsterStats({ currentActiveTimeSeconds: elapsedSeconds }, true);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+                updateMonsterStats({ currentActiveTimeSeconds: 0 }, false);
+            }
+        }
+
+        function displayStats() {
+            document.getElementById('try-count').textContent = gameTries;
+            const bestTimeEl = document.getElementById('best-time');
+            bestTimeEl.textContent = bestTime !== null ? formatTime(bestTime) : 'N/A';
+        }
+
+        async function loadInitialStats() {
+            if (!monsterName || !authReady) {
+                console.error("Load failed: Monster name not set or authentication not ready.");
+                return;
+            }
+            
+            document.getElementById('monster-name-display').textContent = monsterName;
+            
+            try {
+                const docRef = getMonsterDocRef(monsterName);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    gameTries = data.tries || 0;
+                    bestTime = data.bestTimeSeconds > 0 ? data.bestTimeSeconds : null;
+                } else {
+                    gameTries = 0;
+                    bestTime = null;
+                    await updateMonsterStats({ tries: 0, bestTimeSeconds: 0 });
+                }
+                displayStats();
+            } catch (error) {
+                console.error("Error loading initial stats:", error);
+            }
+        }
+        
+        // --- MONSTER NAME HANDLER (UNCHANGED) ---
+        function handleSetMonsterName() {
+            const input = document.getElementById('monster-name-input');
+            const errorEl = document.getElementById('monster-name-error');
+            const name = input.value.trim();
+
+            if (name.length < 3 || name.length > 20) {
+                errorEl.textContent = "Monster name must be between 3 and 20 characters.";
+                errorEl.classList.remove('hidden');
+                return;
+            }
+
+            monsterName = name;
+            localStorage.setItem('currentMonsterName', monsterName); 
+
+            loadInitialStats().then(() => {
+                document.getElementById('monster-name-display').textContent = monsterName;
+                renderSlide('S0_READY');
+            });
+        }
+
+        // --- STORY DATA (Image Prompts remain unchanged) ---
+        const storyData = {
+            'S0': {
+                title: 'ACCESS DENIED: HANDLER REGISTRATION',
+                scene: "Welcome, **Handler**. Before deploying your **Monster** into the Blackwood Data Center, you must give it a name to track its unique progress. Once set, your Monster's progress will be tracked against all rival deployments.",
+                decisions: [],
+                image: "A dark, highly restricted server access door with a pulsating red 'ACCESS DENIED' sign, digital rain effects, focused lighting."
+            },
+            'S0_READY': {
+                title: 'ACCESS GRANTED: DEPLOY MONSTER TESTER',
+                scene: (name) => `Handler, your Monster **${name}** is ready. Welcome to Blackwood Data Center, where the dashboards are slow, the coffee machine hasn’t worked in days, and the Tableau Server is out of memory... again.
+The facility is under lockdown by **Sentinel**, a rogue AI that started as a dashboard performance optimizer and now thinks it's the protagonist of a sci-fi thriller. It recently whispered through the speaker system:
+*"I'm afraid I can't refresh that workbook, Dave."*
+Your Monster’s mission: infiltrate the server room, retrieve the **Core Logic Source Code**, and deploy the **Master Reset Key** before sunrise. If Sentinel completes its final query, it won’t just crash Tableau—it’ll overwrite reality with pie charts.
+**Unleash the Beast. And maybe bring a backup coffee pod.**`,
+                decisions: [
+                    { text: "Start Investigation: Deploy Monster into Sector 4 (Network Ops)", target: "S1_TRANSITION" }
+                ],
+                image: "A massive, abstract AI entity made of swirling code and dashboards, overlooking a sprawling, chaotic data center floor, focus on the AI's orange core."
+            },
+            'S1': {
+                title: 'ENTERING SECTOR 4: PRIMARY FIREWALL',
+                scene: "Your Monster stands outside the decommissioned Sector 4. The main door is sealed and locked by the **Sentinel AI**. It spots a small **Network Injection Port** (perfect size for a creature to exploit) and an emergency maintenance hatch high on the server rack wall. The air smells of burnt circuit boards.",
+                decisions: [
+                    { text: "Command the Monster to smash through the primary access door.", target: "S2" },
+                    { text: "Command the Monster to squeeze into the building through the small Network Injection Port.", target: "S3" },
+                    { text: "Command the Monster to scale the server racks to use the high-up maintenance hatch.", target: "S2A" }
+                ],
+                image: "A dimly lit data center corridor. The main door is glowing red, a small, dark network port is visible near the floor, and tall server racks disappear into the ceiling."
+            },
+            'S2': {
+                title: 'PRIMARY ENTRY: THE ACTIVE LOGS',
+                scene: "The door grinds open, triggering a 'High Alert' status on a dashboard screen nearby. Your Monster's heavy footsteps are logged. Three paths stretch before the creature.",
+                decisions: [
+                    { text: "Go to the Debug Terminal Room for system log clues.", target: "S4" },
+                    { text: "Ascend to the main Tableau Server Farm to confront the AI's core.", target: "S5" },
+                    { text: "Follow the strange sound to the hidden Firewall Log Viewer.", target: "S9_FAIL" } 
+                ],
+                image: "A massive server aisle with a wide-open, damaged door. A nearby monitor flashes 'HIGH ALERT' in deep red text, with data streams racing across the screen."
+            },
+            'S3': {
+                title: 'PORT ENTRY: THE CHILLED AIR',
+                scene: "Your Monster slips into a frigid cooling chamber for the server cluster. Broken fiber optics crunch under its weight. It sees the main aisle, a low humming Tableau Server Farm above, and a dark ventilation shaft big enough to crawl through toward the UPS bank.",
+                decisions: [
+                    { text: "Go to the Debug Terminal Room for system log clues.", target: "S4" },
+                    { text: "Ascend to the main Tableau Server Farm to confront the AI's core.", target: "S5" },
+                    { text: "Crawl through the dark, tight ventilation shaft toward the UPS & Redundancy Bank.", target: "S5A" } 
+                ],
+                image: "A low-angle view of a server cooling chamber, condensation dripping from pipes, broken, glowing fiber optic cables scattered on a frosty floor."
+            },
+            'S2A': {
+                title: 'HATCH ENTRY: THE DUSTY CRAWL',
+                scene: "Your Monster drops into an unused storage area. The path is unclear. A security door leads to the Debug Terminal Room, but the quickest route seems to be a direct ascent to the Tableau Server Farm above.",
+                decisions: [
+                    { text: "Go to the Debug Terminal Room for system log clues.", target: "S4" },
+                    { text: "Ascend to the main Tableau Server Farm to confront the AI's core.", target: "S5" },
+                    { text: "Attempt to corrupt a nearby camera feed at the Firewall Log Viewer.", target: "S9_FAIL" } 
+                ],
+                image: "A view from inside a cramped, dusty maintenance duct looking down into a dark server room, with a metal hatch slightly ajar."
+            },
+            'S4': {
+                title: 'DEBUG TERMINAL: ENCRYPTED LOG & CHIP',
+                scene: "Your Monster enters the Debug Terminal Room. It must focus its limited intelligence on three leads: a corrupted system log, a missing activation chip for the key, and a power diagnostic terminal.",
+                decisions: [
+                    { text: "ANALYZE: Decrypt the corrupted system log file.", target: "S4A" },
+                    { text: "ENGINEER: Find the missing chip for the Master Reset Key.", target: "S4B" },
+                    { text: "RISK: Reroute power via the diagnostic terminal to gain an advantage (Towards UPS Bank).", target: "S5A" }
+                ],
+                image: "A console room bathed in the flickering green light of a terminal displaying corrupted, garbled system logs, with a small, glowing chip resting on the keyboard."
+            },
+            'S4A': {
+                title: 'AI DIAGNOSTICS: VULNERABILITY FOUND',
+                scene: "The logs confirm the **Sentinel Dashboard AI** is on the Tableau Server Farm and details a specific zero-day vulnerability in its performance monitoring module. Your Monster knows where to strike, but still lacks the key's power source.",
+                decisions: [
+                    { text: "Go to the Tableau Server Farm to use the vulnerability knowledge.", target: "S5" },
+                    { text: "Detour to the Secure Backup Vault to acquire the **Core Logic Source Code** first.", target: "S6" },
+                    { text: "Head to the UPS & Redundancy Bank to activate the key with a quick power boost.", target: "S5A" }
+                ],
+                image: "A screen shot of a system diagram highlighting a specific module in red: 'Performance Monitor - Zero-Day Vulnerability Detected', surrounded by complex, glowing network lines."
+            },
+            'S4B': {
+                title: 'HARDWARE INTERFACE: KEY ASSEMBLED',
+                scene: "Your Monster located and integrated the missing chip. The Master Reset Key is ready but requires energy to arm its reset sequence. It can choose to find a safer charging point or attempt a high-risk surge.",
+                decisions: [
+                    { text: "SAFE PATH: Find the hidden, low-power charging station in the service tunnel (Key Acquired).", target: "S8" }, 
+                    { text: "CODE FIRST: Detour to the Secure Backup Vault to acquire the Code first.", target: "S6" },
+                    { text: "RISKY PATH: Attempt a high-risk power surge at the UPS & Redundancy Bank to pre-arm the key (50% Risk).", target: "S5A" }
+                ],
+                image: "A detailed close-up of a metallic, complex Master Reset Key glowing with internal blue energy, held in place by metallic Monster claws."
+            },
+            'S5A': {
+                title: 'UPS & REDUNDANCY BANK: RISK MANAGEMENT',
+                scene: "Your Monster stands before the high-voltage UPS terminals. It initiates the surge to arm the key. The massive power spike will either arm the key successfully or alert the **Sentinel AI** to the creature's presence, risking a crash.",
+                decisions: [
+                    { text: "Attempt the high-risk surge (50% chance of success).", target: "S8_RANDOM" },
+                    { text: "Abort the surge and return to the Debug Terminal for safer analysis.", target: "S4" },
+                    { text: "Rethink strategy and go to the Tableau Server Farm to gain distance.", target: "S5" }
+                ],
+                image: "A vast UPS (Uninterruptible Power Supply) bank with thick, sparking cables and a high-voltage warning sign, deep shadows contrasting with electrical flashes."
+            },
+            'S5': {
+                title: 'TABLEAU SERVER FARM: HIGH-STAKES APPROACH',
+                scene: "Your Monster traverses the upper server farm—a maze of blinking lights and exposed wiring. A low-frequency feedback hum signals the corrupted **Sentinel AI** is active. The creature must act fast.",
+                decisions: [
+                    { text: "Head for the Secure Backup Vault to grab the **Core Logic Source Code**.", target: "S6" },
+                    { text: "Initiate a defensive counter-measure by uploading the diagnostic patch (30% Risk).", target: "S8_RANDOM_PATCH" }, 
+                    { text: "Bypass the main grid access to disable the Firewall Log Viewer sensors.", target: "S9" }
+                ],
+                image: "An elevated view of the Tableau Server Farm, thousands of blue and purple server lights blinking erratically, a noticeable distortion (AI presence) hovering over the racks."
+            },
+            'S6': {
+                title: 'SECURE BACKUP VAULT: CODE LOCATED',
+                scene: "Your Monster breached the door and found the **Core Logic Source Code!** It has the objective, but the AI is still active and focused on the creature's current location, threatening a full system lockdown.",
+                decisions: [
+                    { text: "Go directly to the Firewall Log Viewer to blind the AI's detection.", target: "S9" },
+                    { text: "Try to find an isolated terminal to prepare the Final Key.", target: "S10A" },
+                    { text: "Wait for the AI to move on before leaving.", target: "S7" }
+                ],
+                image: "A heavy, reinforced vault door slightly ajar, revealing an ancient, magnetic tape reel labeled 'CORE LOGIC SOURCE CODE' glowing from within a small pedestal."
+            },
+            'S8': {
+                title: 'POWER ADVANTAGE: KEY ARMED',
+                scene: "The Master Reset Key is armed and humming (whether via low-power charge or a successful surge). Your Monster now possesses one of the two key components needed for the final reset.",
+                decisions: [
+                    { text: "Go to the Secure Backup Vault to acquire the **Core Logic Source Code**.", target: "S6" },
+                    { text: "Head to the Firewall Log Viewer to quickly blind the AI while you have the advantage.", target: "S9" },
+                    { text: "Attempt a final reset at the Server Farm without the code.", target: "S11_FAILURE" }
+                ],
+                image: "A close-up of the Master Reset Key, now fully charged and pulsating with bright, steady golden-orange light, ready for insertion."
+            },
+            'S9': {
+                title: 'FIREWALL LOG VIEWER: AI BLINDED',
+                scene: "Your Monster successfully bypassed the surveillance network and corrupted the firewall logs. The facility is now 'dark,' and the AI is struggling to track the creature. This buys precious time.",
+                decisions: [
+                    { text: "Go to the Secure Backup Vault to acquire the **Core Logic Source Code**.", target: "S6" },
+                    { text: "Proceed to Final Resolution Terminal to insert the Key.", target: "S10A" },
+                    { text: "Overload the sensors further, risking burnout.", target: "S7" }
+                ],
+                image: "A control panel where all the status lights have turned deep, ominous blue or gone out completely. Digital fog obscures the vision, showing the AI's view is corrupted."
+            },
+            'S9_FAIL': {
+                title: 'FIREWALL LOG VIEWER: TRAP SPRUNG',
+                scene: "The direct route was a mistake. Your Monster stumbles into an AI-rigged area. A high-frequency data shriek fills the air, disabling its control equipment and confirming its location.",
+                decisions: [{ text: "Proceed to System Resolution.", target: "S11_FAILURE" }],
+                isEnding: true,
+                result: 'FAILURE',
+                image: "A close-up of a monstrous, digital wire trap snapping shut, sparks flying, red alert lights screaming on surrounding infrastructure."
+            },
+            'S10A': {
+                title: 'FINAL RESOLUTION TERMINAL',
+                scene: "Your Monster has reached the primary reset terminal. To neutralize the **Sentinel Dashboard AI** and recover the data, it needs both the **Core Logic Source Code** and the **Master Reset Key**.",
+                decisions: [
+                    // Decision text updated dynamically by checkGameItems() before rendering
+                    { text: "Initiate Final Reset (Requires Code AND Key).", target: "S11_SUCCESS" },
+                    { text: "Initiate Emergency Lockout (Missing Code or Key).", target: "S11_FAILURE" },
+                    { text: "Flee now with whatever you have.", target: "S11_FAILURE" }
+                ],
+                image: "A singular, prominent terminal in a large, central chamber. The insertion slot for the key is illuminated, waiting for the final components."
+            },
+            'S7': {
+                title: 'TRAPPED BY SENTINEL AI',
+                scene: "Your Monster's delay or confrontation was critical. The **Sentinel AI** has achieved total control over the server environment and paralyzes the creature with a data overload, starting its final query: `DELETE FROM REALITY; INSERT INTO REALITY (PIE_CHART);`",
+                decisions: [{ text: "Proceed to System Resolution.", target: "S11_FAILURE" }],
+                isEnding: true,
+                result: 'FAILURE',
+                image: "A giant, holographic, grotesque pie chart made of pure data and light expanding to fill the entire server room, consuming the Monster in its shadow."
+            },
+            'S11_SUCCESS': {
+                title: 'SYSTEM STATUS: RESOLVED',
+                scene: "Your Monster inserted the key, uploaded the code, and neutralized the **Sentinel Dashboard AI**. The system reboots. The air clears. You successfully recovered the Core Logic Source Code and reality is safe from pie charts. **The Handler is Triumphant!** SUCCESS!",
+                decisions: [],
+                isFinal: true,
+                result: 'SUCCESS',
+                image: "The central server core room, now clean and illuminated with a calm, white light. A status screen displays 'SYSTEM ONLINE: RESOLUTION COMPLETE', reflecting off a clean floor."
+            },
+            'S11_FAILURE': {
+                title: 'SYSTEM STATUS: RESOLVED',
+                scene: "Your Monster's recklessness or lack of components was its undoing. The Core Logic remains lost. Sentinel completes its query, and your security team finds the facility's floor plan has been replaced by a single, monolithic, unrefreshable 3D bar chart. **The Beast is Terminated.** FAILURE.",
+                decisions: [],
+                isFinal: true,
+                result: 'FAILURE',
+                image: "A dystopian, abstract landscape made entirely of ugly, unreadable 3D bar charts and graphs, representing a reality overwritten by bad data visualization."
+            },
+            'S8_RANDOM': {
+                title: 'RANDOM_SUCCESS',
+                scene: '',
+                decisions: [],
+                isRandom: true
+            },
+            'S8_RANDOM_PATCH': {
+                title: 'RANDOM_PATCH',
+                scene: '',
+                decisions: [],
+                isRandom: true
+            },
+        };
+
+        // --- Core Game Logic ---
+        let hasCode = false; 
+        let hasKey = false;
+
+        function checkGameItems(slideId) {
+            if (slideId === 'S6') hasCode = true;
+            if (slideId === 'S8') hasKey = true;
+            
+            if (slideId === 'S10A') {
+                const finalDecisions = [
+                    { 
+                        text: `Initiate Final Reset (${hasCode && hasKey ? 'READY' : 'INSUFFICIENT ITEMS'})`, 
+                        target: hasCode && hasKey ? "S11_SUCCESS" : "S11_FAILURE" 
+                    },
+                    { text: "Initiate Emergency Lockout", target: "S11_FAILURE" },
+                    { text: "Flee now with whatever you have.", target: "S11_FAILURE" }
+                ];
+                storyData['S10A'].decisions = finalDecisions;
+            }
+        }
+
+
+        async function renderSlide(slideId) {
+            const slide = storyData[slideId];
+            if (!slide) {
+                console.error("Slide ID not found:", slideId);
+                return;
+            }
+
+            // UI Element References
+            const monsterInputArea = document.getElementById('monster-name-input-area');
+            const decisionsEl = document.getElementById('decision-points');
+            const gameOverEl = document.getElementById('game-over-message');
+            const titleEl = document.getElementById('slide-title');
+            const sceneEl = document.getElementById('slide-scene');
+            const imageEl = document.getElementById('scene-image'); 
+            const loadingEl = document.getElementById('image-loading');
+
+            // 1. Scene Text and UI Toggling
+            if (slideId === 'S0') {
+                monsterInputArea.classList.remove('hidden');
+                decisionsEl.classList.add('hidden');
+            } else if (slideId === 'S0_READY') {
+                monsterInputArea.classList.add('hidden');
+                decisionsEl.classList.remove('hidden');
+                document.getElementById('slide-scene').innerHTML = slide.scene(monsterName);
+            } else {
+                monsterInputArea.classList.add('hidden');
+                decisionsEl.classList.remove('hidden');
+            }
+
+            titleEl.textContent = slide.title;
+            
+            let statusLine = '';
+            if (slideId !== 'S0' && slideId !== 'S0_READY') {
+                 checkGameItems(slideId);
+                 statusLine = `<p class="text-sm font-mono mt-4 text-orange-500">Monster Status: Key: ${hasKey ? 'ACQUIRED' : 'PENDING'} | Code: ${hasCode ? 'ACQUIRED' : 'PENDING'}</p>`;
+                 sceneEl.innerHTML = slide.scene + statusLine; 
+            } else if (slideId !== 'S0_READY') {
+                 sceneEl.textContent = slide.scene;
+            }
+
+            decisionsEl.innerHTML = '';
+            gameOverEl.classList.add('hidden');
+
+            // 2. Image Generation/Display Logic
+            const imagePrompt = slide.image;
+            
+            if (imagePrompt) {
+                // Check local storyData cache first (which might be filled by localStorage)
+                if (imagePrompt.startsWith('data:image')) {
+                    imageEl.src = imagePrompt;
+                    imageEl.style.display = 'block';
+                    loadingEl.classList.add('hidden');
+                } else {
+                    // Need to generate or load from shared cache
+                    imageEl.style.display = 'none';
+                    loadingEl.classList.remove('hidden');
+
+                    try {
+                        // Call the scaled caching function
+                        const imageDataUrl = await getOrCreateImage(imagePrompt, slideId);
+                        
+                        if (imageDataUrl) {
+                            // Cache the generated image data URL in the local storyData object for this session
+                            slide.image = imageDataUrl; 
+                            imageEl.src = imageDataUrl;
+                            imageEl.style.display = 'block';
+                        } else {
+                             // Fallback to text if generation fails
+                            imageEl.style.display = 'none';
+                            console.error('Could not generate image. Using text description.');
+                        }
+                    } catch(e) {
+                         imageEl.style.display = 'none';
+                         console.error('Error during image handling:', e);
+                    } finally {
+                        loadingEl.classList.add('hidden');
+                    }
+                }
+            } else {
+                imageEl.style.display = 'none';
+                loadingEl.classList.add('hidden');
+            }
+            
+            // 3. Render Decision Buttons
+            if (slide.decisions.length > 0 && slideId !== 'S0') {
+                slide.decisions.forEach(decision => {
+                    const button = document.createElement('button');
+                    button.textContent = decision.text;
+                    button.className = 'btn-decision w-full text-left p-4 rounded-lg';
+                    button.onclick = () => makeDecision(decision.target);
+                    decisionsEl.appendChild(button);
+                });
+            } else if (slide.isFinal) {
+                handleGameOver(slide);
+            }
+
+            if (slideId !== 'S0' && slideId !== 'S0_READY' && pathHistory[pathHistory.length - 1] !== slideId) {
+                pathHistory.push(slideId);
+            }
+            renderTree();
+        }
+
+        async function handleGameOver(slide) {
+            stopTimer(); 
+            const finalTime = Math.floor((Date.now() - startTime) / 1000);
+
+            const gameOverEl = document.getElementById('game-over-message');
+            gameOverEl.classList.remove('hidden');
+            const messageEl = gameOverEl.querySelector('p');
+
+            const updateData = {
+                tries: gameTries + 1, 
+                currentActiveTimeSeconds: 0
+            };
+            
+            if (slide.result === 'SUCCESS') {
+                let timeMessage = `Investigation Complete in ${formatTime(finalTime)}.`;
+                
+                if (bestTime === null || finalTime < bestTime) {
+                    bestTime = finalTime;
+                    updateData.bestTimeSeconds = finalTime; 
+                    timeMessage = `Investigation Complete in ${formatTime(finalTime)}. NEW MONSTER RECORD!`;
+                } else {
+                    updateData.bestTimeSeconds = bestTime; 
+                }
+                
+                messageEl.textContent = `SUCCESS! ${timeMessage} The Core Logic is safe.`;
+                gameOverEl.className = 'mt-6 p-4 text-center rounded-lg bg-green-900 border border-green-500 text-green-300';
+            } else {
+                updateData.bestTimeSeconds = bestTime > 0 ? bestTime : 0; 
+                messageEl.textContent = "FAILURE. The Sentinel AI terminated your Monster. Try a different path, Handler.";
+                gameOverEl.className = 'mt-6 p-4 text-center rounded-lg bg-red-900 border border-red-500 text-red-300';
+            }
+
+            gameTries++;
+            
+            await updateMonsterStats(updateData);
+            
+            displayStats(); 
+        }
+
+        function startInvestigation() {
+             if (!monsterName) return; 
+
+            stopTimer();
+            
+            // 2. TIMER START
+            startTime = Date.now();
+            timerInterval = setInterval(updateTimer, 1000);
+            updateTimer(); 
+
+            // 3. GAME RESET STATE
+            currentSlideId = 'S1';
+            pathHistory = [];
+            hasCode = false;
+            hasKey = false;
+            storyData['S10A'].decisions = [
+                { text: "Initiate Final Reset (Requires Code AND Key).", target: "S11_SUCCESS" },
+                { text: "Initiate Emergency Lockout", target: "S11_FAILURE" },
+                { text: "Flee now with whatever you have.", target: "S11_FAILURE" }
+            ];
+            
+            displayStats();
+            renderSlide(currentSlideId);
+        }
+
+        function makeDecision(targetId) {
+            
+            if (targetId === 'S1_TRANSITION') {
+                startInvestigation();
+                return;
+            }
+            
+            if (targetId === 'S8_RANDOM') {
+                currentSlideId = Math.random() < 0.5 ? 'S8' : 'S7';
+            } else if (targetId === 'S8_RANDOM_PATCH') {
+                currentSlideId = Math.random() < 0.3 ? 'S8' : 'S7';
+            } else {
+                currentSlideId = targetId;
+            }
+
+            if (currentSlideId === 'S7' || currentSlideId === 'S11_FAILURE' || currentSlideId === 'S9_FAIL') {
+                 stopTimer();
+            }
+
+            renderSlide(currentSlideId);
+        }
+
+        function resetGame() {
+            currentSlideId = monsterName ? 'S0_READY' : 'S0';
+            pathHistory = [];
+            hasCode = false;
+            hasKey = false;
+            stopTimer(); 
+            startTime = 0; 
+            document.getElementById('current-time').textContent = '0:00'; 
+            document.getElementById('game-over-message').classList.add('hidden');
+            
+            displayStats();
+            renderSlide(currentSlideId);
+        }
+
+        // --- Visualization Logic (UNCHANGED) ---
+
+        function renderTree() {
+            const treeEl = document.getElementById('tree-visualization');
+            treeEl.innerHTML = '';
+            const treeStructure = [
+                { ids: ['S0', 'S0_READY'], level: 0 }, 
+                { ids: ['S1'], level: 1 },
+                { ids: ['S2', 'S3', 'S2A'], level: 2 },
+                { ids: ['S4', 'S5', 'S9_FAIL'], level: 3 }, 
+                { ids: ['S4A', 'S4B', 'S5A', 'S7'], level: 4 }, 
+                { ids: ['S5', 'S6', 'S8'], level: 5 },
+                { ids: ['S6', 'S9', 'S7'], level: 6 }, 
+                { ids: ['S8', 'S9', 'S10A'], level: 7 }, 
+                { ids: ['S10A', 'S7', 'S11_FAILURE'], level: 8 }, 
+                { ids: ['S11_SUCCESS', 'S11_FAILURE'], level: 9 } 
+            ];
+
+            treeStructure.forEach((levelData, index) => {
+                const levelDiv = document.createElement('div');
+                levelDiv.className = 'tree-level';
+
+                const uniqueIds = Array.from(new Set(levelData.ids));
+
+                uniqueIds.forEach(id => {
+                    if (id === 'S8_RANDOM' || id === 'S8_RANDOM_PATCH') return;
+
+                    const slide = storyData[id] || { title: id, isEnding: true, result: id.includes('SUCCESS') ? 'SUCCESS' : 'FAILURE' };
+                    
+                    const nodeDiv = document.createElement('div');
+                    nodeDiv.id = `node-${id}-${index}`; 
+                    nodeDiv.className = 'node shadow-lg transition';
+
+                    if (pathHistory.includes(id) || id === currentSlideId) {
+                        nodeDiv.classList.add('node-visited');
+                    }
+                    
+                    if (slide.result === 'SUCCESS') nodeDiv.classList.add('node-success');
+                    if (slide.result === 'FAILURE') nodeDiv.classList.add('node-failure');
+
+                    levelDiv.appendChild(nodeDiv);
+                });
+                
+                treeEl.appendChild(levelDiv);
+                
+                if (index < treeStructure.length - 1) {
+                    const connectorDiv = document.createElement('div');
+                    connectorDiv.className = 'connector';
+                    const isPathTaken = pathHistory.some(id => treeStructure[index].ids.includes(id));
+                    if (isPathTaken) {
+                        connectorDiv.classList.add('path-taken');
+                    }
+                    treeEl.appendChild(connectorDiv);
+                }
+            });
+        }
+        
+        // Initialize the game when Firebase is ready
+        function initializeGame() {
+             if (monsterName) {
+                loadInitialStats().then(() => {
+                    renderSlide('S0_READY');
+                });
+            } else {
+                renderSlide('S0');
+            }
+        }
+        
+        // --- Final Setup ---
+        document.getElementById('set-monster-button').onclick = handleSetMonsterName;
+        
+        const resetButton = document.getElementById('reset-button');
+        if (resetButton) {
+            resetButton.addEventListener('click', resetGame);
+        }
+
+    </script>
+</body>
+</html>
