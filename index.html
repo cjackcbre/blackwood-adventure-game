@@ -36,7 +36,7 @@
             box-shadow: 0 2px #4B0082;
         }
 
-        /* Loading Spinner */
+        /* Loading Spinner - Retained in CSS but not used by JS logic anymore */
         .spinner {
             border: 4px solid rgba(255, 255, 255, 0.3);
             border-top: 4px solid #FF8C00;
@@ -115,11 +115,9 @@
             
             <div id="story-container" class="data-panel p-6 md:p-10 rounded-xl relative"> 
                 
-                <div id="image-wrapper" class="w-full aspect-video rounded-lg mb-6 border border-purple-500 shadow-xl flex items-center justify-center bg-[#110518]">
-                    <img id="scene-image" class="w-full h-full object-cover rounded-lg" alt="Scene Image" style="display: none;">
-                    <div id="image-loading" class="hidden">
-                        <div class="spinner"></div>
-                        <p class="text-sm text-gray-400 mt-2">Generating scene visualization...</p>
+                <div id="image-wrapper" class="w-full aspect-video rounded-lg mb-6 border border-purple-500 shadow-xl flex items-center justify-center bg-[#1a082a]">
+                    <div class="text-neon text-xl font-bold p-4 text-center">
+                        [Scene Visualization Disabled for Speed]
                     </div>
                 </div>
 
@@ -181,7 +179,7 @@
 
     <script type="module">
         // --- FIXED IMPORTS AND CONFIGURATION FOR PUBLIC HOSTING ---
-        // We are using the 11.6.1 SDK imports as they were already in the original game.
+        // Using the v11.6.1 SDK imports as they were in the original game.
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, collection, query, updateDoc, getDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -198,7 +196,7 @@
         
         // Use project ID as the app ID, and set token to null for public deployment
         const appId = firebaseConfig.projectId; 
-        const initialAuthToken = null; // CRITICAL: Forces Anonymous Sign-in on public web
+        const initialAuthToken = null; // Forces Anonymous Sign-in on public web
 
         // Initialize Firebase services
         const app = initializeApp(firebaseConfig);
@@ -217,111 +215,22 @@
         // Monster State 
         let monsterName = localStorage.getItem('currentMonsterName') || '';
         const MONSTERS_COLLECTION_PATH = `artifacts/${appId}/public/data/monsters`;
-        // NEW: Public cache for generated images
-        const IMAGE_CACHE_COLLECTION_PATH = `artifacts/${appId}/public/data/image_cache`;
-
+        // NOTE: IMAGE_CACHE_COLLECTION_PATH and related logic removed
+        
         // STATS VARIABLES
         let startTime = 0;
         let timerInterval = null;
         let gameTries = 0;
         let bestTime = null; // Stored in seconds
 
-        // --- IMAGE GENERATION AND CACHING LOGIC ---
-
-        const IMAGE_MODEL = "imagen-3.0-generate-002";
-        // 🚨 IMPORTANT: REPLACE THIS PLACEHOLDER WITH YOUR ACTUAL GEMINI API KEY
-        const API_KEY = "AIzaSyAedgbezZqpeiepZwKl3VUlx0Tvefrmk2c"; 
-
-        // Helper function for exponential backoff during API calls
-        async function exponentialBackoffFetch(url, options, maxRetries = 5, delay = 1000) {
-            for (let i = 0; i < maxRetries; i++) {
-                try {
-                    const response = await fetch(url, options);
-                    if (response.ok) {
-                        return response;
-                    } else if (response.status === 429) { // Rate limit or quota error
-                        console.warn(`Fetch attempt ${i + 1} hit rate limit (429). Retrying...`);
-                    }
-                } catch (error) {
-                    console.warn(`Fetch attempt ${i + 1} failed. Retrying...`);
-                }
-                await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
-            }
-            throw new Error('All fetch attempts failed.');
-        }
-        
-        // NEW: Get or Create Image using Firestore as a cache layer
-        async function getOrCreateImage(prompt, slideId) {
-            const cacheDocRef = doc(db, IMAGE_CACHE_COLLECTION_PATH, slideId);
-
-            // 1. Check browser's local storage (fastest check, avoids API/DB calls for returning users)
-            const localDataUrl = localStorage.getItem(`image_${slideId}`);
-            if (localDataUrl) {
-                console.log(`Image for ${slideId} found in local storage.`);
-                return localDataUrl;
-            }
-
-            // 2. Image not found locally, proceed to generate
-            console.log(`Image for ${slideId} not in local cache. Generating...`);
-
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${IMAGE_MODEL}:predict?key=${API_KEY}`;
-            
-            // Refine the prompt for high-quality, thematic images
-            const fullPrompt = `Cinematic, photorealistic image of a futuristic, dark data center environment, glowing neon orange and deep purple lights, high-tech glitch atmosphere, wide shot. Subject: ${prompt}`;
-            
-            const payload = { 
-                instances: { prompt: fullPrompt }, 
-                parameters: { "sampleCount": 1, "aspectRatio": "16:9" } 
-            };
-
-            const options = {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            };
-
-            try {
-                const response = await exponentialBackoffFetch(apiUrl, options);
-                const result = await response.json();
-
-                if (result.predictions && result.predictions.length > 0 && result.predictions[0].bytesBase64Encoded) {
-                    const imageDataUrl = `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`;
-                    
-                    // 3. Store the result in local storage (for returning user's sessions)
-                    localStorage.setItem(`image_${slideId}`, imageDataUrl);
-                    
-                    // 4. Store ONLY METADATA in Firestore (to avoid the 1MB document limit error)
-                    // This acts as a global flag that this prompt has been successfully generated.
-                    try {
-                        await setDoc(cacheDocRef, {
-                            prompt: prompt,
-                            // CRITICAL FIX: Do NOT store the large Base64 string here
-                            generated: true, 
-                            timestamp: new Date()
-                        }, { merge: true });
-                        console.log(`Image metadata for ${slideId} successfully cached to Firestore.`);
-                    } catch (error) {
-                        // Log non-critical error, but the image is generated and saved locally
-                        console.error("Error writing image metadata to Firestore:", error);
-                    }
-
-                    return imageDataUrl;
-
-                } else {
-                    console.error("Image generation failed:", result);
-                    return null;
-                }
-            } catch (error) {
-                console.error("API call error during image generation:", error);
-                return null;
-            }
-        }
+        // --- IMAGE GENERATION AND CACHING LOGIC REMOVED ---
+        // All API key, fetch helpers, and getOrCreateImage function removed for speed.
         
         // --- FIREBASE INITIALIZATION AND AUTH ---
 
         async function authenticateAndInitialize() {
             try {
-                // 🚨 CRITICAL FIX: Force Anonymous Sign-in for public access, ignoring the old token check
+                // CRITICAL FIX: Force Anonymous Sign-in for public access
                 await signInAnonymously(auth);
                 
                 userId = auth.currentUser.uid;
@@ -397,6 +306,7 @@
                 });
 
                 monsters.sort((a, b) => {
+                    // Sorting by bestTimeSeconds is still done client-side
                     const timeA = a.bestTimeSeconds > 0 ? a.bestTimeSeconds : Infinity;
                     const timeB = b.bestTimeSeconds > 0 ? b.bestTimeSeconds : Infinity;
                     return timeA - timeB;
@@ -510,7 +420,7 @@
             });
         }
 
-        // --- STORY DATA (Image Prompts remain unchanged) ---
+        // --- STORY DATA (UNCHANGED, images fields are now just used for static description) ---
         const storyData = {
             'S0': {
                 title: 'ACCESS DENIED: HANDLER REGISTRATION',
@@ -742,8 +652,8 @@ Your Monster’s mission: infiltrate the server room, retrieve the **Core Logic 
             const gameOverEl = document.getElementById('game-over-message');
             const titleEl = document.getElementById('slide-title');
             const sceneEl = document.getElementById('slide-scene');
-            const imageEl = document.getElementById('scene-image'); 
-            const loadingEl = document.getElementById('image-loading');
+            // Image elements are now purely cosmetic background and do not rely on JS or API calls.
+            // Removed image loading/generation logic here.
 
             // 1. Scene Text and UI Toggling
             if (slideId === 'S0') {
@@ -772,45 +682,8 @@ Your Monster’s mission: infiltrate the server room, retrieve the **Core Logic 
             decisionsEl.innerHTML = '';
             gameOverEl.classList.add('hidden');
 
-            // 2. Image Generation/Display Logic
-            const imagePrompt = slide.image;
-            
-            if (imagePrompt) {
-                // Check local storyData cache first (which might be filled by localStorage)
-                if (imagePrompt.startsWith('data:image')) {
-                    imageEl.src = imagePrompt;
-                    imageEl.style.display = 'block';
-                    loadingEl.classList.add('hidden');
-                } else {
-                    // Need to generate or load from shared cache
-                    imageEl.style.display = 'none';
-                    loadingEl.classList.remove('hidden');
-
-                    try {
-                        // Call the scaled caching function
-                        const imageDataUrl = await getOrCreateImage(imagePrompt, slideId);
-                        
-                        if (imageDataUrl) {
-                            // Cache the generated image data URL in the local storyData object for this session
-                            slide.image = imageDataUrl; 
-                            imageEl.src = imageDataUrl;
-                            imageEl.style.display = 'block';
-                        } else {
-                             // Fallback to text if generation fails
-                            imageEl.style.display = 'none';
-                            console.error('Could not generate image. Using text description.');
-                        }
-                    } catch(e) {
-                         imageEl.style.display = 'none';
-                         console.error('Error during image handling:', e);
-                    } finally {
-                        loadingEl.classList.add('hidden');
-                    }
-                }
-            } else {
-                imageEl.style.display = 'none';
-                loadingEl.classList.add('hidden');
-            }
+            // 2. Image Generation/Display Logic: **REMOVED**
+            // The image wrapper now only displays the [Scene Visualization Disabled for Speed] message.
             
             // 3. Render Decision Buttons
             if (slide.decisions.length > 0 && slideId !== 'S0') {
